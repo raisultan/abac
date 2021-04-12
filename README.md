@@ -6,6 +6,16 @@
 - Docker
 
 
+## Entities
+
+![entities](diagrams/abac-entities.jpg)
+
+
+## Routes
+
+![entities](diagrams/abac-routes.jpg)
+
+
 ## Todo:
 - [ ] user model implementation
 - [ ] CRUD for user model
