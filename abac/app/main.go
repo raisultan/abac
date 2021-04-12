@@ -1,20 +1,15 @@
 package main
 
 import (
+	"abac/router"
+	"fmt"
+	"log"
 	"net/http"
-	"time"
 )
 
 func main() {
-	hs, logger := setup()
+	r := router.Router()
+	fmt.Println("Starting server on the port 8080...")
 
-	go func() {
-		logger.Println("Up and running")
-
-		if err := hs.ListenAndServe(); err != http.ErrServerClosed {
-			logger.Fatal(err)
-		}
-	}()
-
-	graceful(hs, logger, 5*time.Second)
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
