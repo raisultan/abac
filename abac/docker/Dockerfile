@@ -1,11 +1,8 @@
-FROM golang:1.14.7-alpine
-
-LABEL maintainer="raisultan"
+FROM golang:1.16.3-alpine
 
 WORKDIR /app
 
 COPY ./app/go.mod /app
-COPY ./app/go.sum /app
 
 RUN go mod download
 
