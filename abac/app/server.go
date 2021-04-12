@@ -39,5 +39,5 @@ func graceful(hs *http.Server, logger *log.Logger, timeout time.Duration) {
 type server struct{}
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+	w.Write([]byte("Server is up!"))
 }
