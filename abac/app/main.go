@@ -1,15 +1,16 @@
 package main
 
-import (
-	"abac/router"
-	"fmt"
-	"log"
-	"net/http"
-)
+import "os"
+
+const defaultPort = ":8000"
 
 func main() {
-	r := router.Router()
-	fmt.Println("Starting server on the port 8080...")
+	a := App{}
+	a.Initialize(
+		os.Getenv("DB_USERNAME"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"),
+	)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	a.Run(defaultPort)
 }
