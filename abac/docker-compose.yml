@@ -11,6 +11,6 @@ services:
   db:
     image: postgres:13.2-alpine
     environment:
-      POSTGRES_DB: abac_db
-      POSTGRES_USER: abac_user
-      POSTGRES_PASSWORD: abac_password
+      DB_NAME: abac_db
+      DB_USERNAME: abac_user
+      DB_PASSWORD: abac_password
