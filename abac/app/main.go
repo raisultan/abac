@@ -2,7 +2,7 @@ package main
 
 import "os"
 
-const defaultPort = ":8000"
+const defaultPort = ":8080"
 
 func main() {
 	a := App{}
