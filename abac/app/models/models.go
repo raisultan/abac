@@ -30,3 +30,7 @@ func (u *user) deleteUser(db *sql.DB) error {
 func (u *user) createUser(db *sql.DB) error {
 	return errors.New("Not implemented")
 }
+
+func (u *user) getUsers(db *sql.DB) error {
+	return errors.New("Not implemented")
+}
