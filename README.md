@@ -17,8 +17,8 @@
 
 
 ## Todo:
-- [ ] setup migrations
-- [ ] user model implementation
+- [X] setup migrations
+- [X] user model implementation
 - [ ] CRUD for user model
 - [ ] basic JWT auth
 - [ ] customization of basic auth
