@@ -313,13 +313,13 @@ func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwtRefResp := userJWTRefreshResponse{}
-	if err := jwtRefResp.refresh(jwtRefReq.Refresh); err != nil {
-		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
+	at, err := refreshAccessToken(jwtRefReq.Refresh)
+	if err != nil {
+		respondWithErrorMessage(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, jwtRefResp)
+	respondWithJSON(w, http.StatusCreated, userJWTRefreshResponse{Access: at})
 }
 
 func (a *App) initializeRoutes() {
@@ -365,20 +365,54 @@ func createRefreshToken(email string) (string, error) {
 	return token, nil
 }
 
-func refreshAccessToken(email string) (string, error) {
-	atClaims := jwt.MapClaims{}
-	atClaims["isAuthorized"] = true
-	atClaims["email"] = email
-	atClaims["type"] = "refresh"
-	atClaims["exp"] = time.Now().Add(30 * time.Minute).Unix()
+func refreshAccessToken(a string) (string, error) {
+	token, err := jwt.Parse(a, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New(
+				fmt.Sprintf(
+					"unexpected signing method: %v",
+					token.Header["alg"],
+				),
+			)
+		}
+		return jwtKey, nil
+	})
 
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	token, err := at.SignedString(jwtKey)
 	if err != nil {
 		return "", err
 	}
 
-	return token, nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		email, ok := claims["email"].(string)
+		if !ok {
+			return "", err
+		}
+
+		tType, ok := claims["type"].(string)
+		if !ok {
+			return "", err
+		}
+		if tType != "refresh" {
+			return "", errors.New("Refresh token is expected")
+		}
+
+		atClaims := jwt.MapClaims{}
+		atClaims["isAuthorized"] = true
+		atClaims["email"] = email
+		atClaims["type"] = "access"
+		atClaims["exp"] = time.Now().Add(5 * time.Minute).Unix()
+
+		at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+		token, err := at.SignedString(jwtKey)
+		if err != nil {
+			return "", err
+		}
+
+		return token, nil
+	}
+
+	return "", errors.New("Invalid refresh token")
 }
 
 func ExtractToken(r *http.Request) string {
