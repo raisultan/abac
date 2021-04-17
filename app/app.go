@@ -94,7 +94,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid product ID")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
@@ -102,9 +102,9 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	if err := u.getUser(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			respondWithError(w, http.StatusNotFound, "User not found")
+			respondWithErrorMessage(w, http.StatusNotFound, "User not found")
 		default:
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		}
 		return
 	}
@@ -112,7 +112,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
-func respondWithError(w http.ResponseWriter, code int, message string) {
+func respondWithErrorMessage(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
@@ -137,7 +137,7 @@ func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := getUsers(a.DB, start, count)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -148,21 +148,21 @@ func (a *App) updateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	var u user
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&u); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid resquest payload")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid resquest payload")
 		return
 	}
 	defer r.Body.Close()
 	u.ID = id
 
 	if err := u.updateUser(a.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -173,13 +173,13 @@ func (a *App) deleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid User ID")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid User ID")
 		return
 	}
 
 	u := user{ID: id}
 	if err := u.deleteUser(a.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -191,7 +191,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&uLoginCreds); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
@@ -200,16 +200,16 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	if err := u.getUserByEmail(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+			respondWithErrorMessage(w, http.StatusUnauthorized, "Invalid credentials")
 		default:
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		}
 		return
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(uLoginCreds.Password))
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		respondWithErrorMessage(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
@@ -222,7 +222,7 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&uReq); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
@@ -242,17 +242,17 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 
 	exists, err := uReq.checkUserExists(a.DB)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	} else {
 		if exists == true {
-			respondWithError(w, http.StatusBadRequest, "User already exists")
+			respondWithErrorMessage(w, http.StatusBadRequest, "User already exists")
 			return
 		}
 	}
 
 	if err := uReq.register(a.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
