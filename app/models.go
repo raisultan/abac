@@ -26,6 +26,13 @@ func (u *user) getUser(db *sql.DB) error {
 	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
 }
 
+func (u *user) getUserByEmail(db *sql.DB) error {
+	return db.QueryRow(
+		"SELECT email, password, firstName, lastName FROM users WHERE email=$1",
+		u.Email,
+	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
+}
+
 func (u *user) updateUser(db *sql.DB) error {
 	_, err := db.Exec(
 		"UPDATE users SET email=$1, firstName=$2, lastName=$3 WHERE id=$4",
