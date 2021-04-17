@@ -4,6 +4,10 @@ up_services:
 stop_services:
 	docker-compose stop
 
+restart_services:
+	docker-compose stop
+	docker-compose up --build -d
+
 down_services:
 	docker-compose down
 
