@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 
-	"fmt"
 	"log"
 
 	"encoding/json"
@@ -21,17 +20,9 @@ type App struct {
 	DB     *sql.DB
 }
 
-func (a *App) Initialize(user, password, dbname string) {
-	connectionString :=
-		fmt.Sprintf(
-			"postgres://%s:%s@db/%s?sslmode=disable",
-			user,
-			password,
-			dbname,
-		)
-
+func (a *App) Initialize(dbUrl string) {
 	var err error
-	a.DB, err = sql.Open("postgres", connectionString)
+	a.DB, err = sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
