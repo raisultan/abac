@@ -152,7 +152,7 @@ func (a *App) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
-	var uCreds user
+	var uCreds userLogin
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&uCreds); err != nil {
@@ -161,7 +161,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	u := user{Email: uCreds.Email}
+	u := userLogin{Email: uCreds.Email}
 	if err := u.getUserByEmail(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
