@@ -415,7 +415,7 @@ func refreshAccessToken(a string) (string, error) {
 	return "", errors.New("Invalid refresh token")
 }
 
-func ExtractToken(r *http.Request) string {
+func extractToken(r *http.Request) string {
 	bearer := r.Header.Get("Authorization")
 	strArr := strings.Split(bearer, " ")
 	if len(strArr) == 2 {
@@ -424,8 +424,8 @@ func ExtractToken(r *http.Request) string {
 	return ""
 }
 
-func VerifyToken(r *http.Request) (*jwt.Token, error) {
-	tokenStr := ExtractToken(r)
+func verifyToken(r *http.Request) (*jwt.Token, error) {
+	tokenStr := extractToken(r)
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New(
@@ -445,8 +445,8 @@ func VerifyToken(r *http.Request) (*jwt.Token, error) {
 	return token, nil
 }
 
-func TokenValid(r *http.Request) error {
-	token, err := VerifyToken(r)
+func isTokenValid(r *http.Request) error {
+	token, err := verifyToken(r)
 	if err != nil {
 		return err
 	}
@@ -456,8 +456,8 @@ func TokenValid(r *http.Request) error {
 	return nil
 }
 
-func ExtractTokenPayload(r *http.Request) (*tokenPayload, error) {
-	token, err := VerifyToken(r)
+func extractTokenPayload(r *http.Request) (*tokenPayload, error) {
+	token, err := verifyToken(r)
 	if err != nil {
 		return nil, err
 	}
