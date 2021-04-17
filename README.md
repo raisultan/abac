@@ -25,5 +25,6 @@
 - [X] password hiding
 - [X] check for required fields on each scheme
 - [x] basic JWT auth
-- [ ] jwt support for all routes
+- [X] jwt support for all routes
+- [ ] refactor and restructure the whole project
 - [ ] customization of basic auth
