@@ -24,5 +24,6 @@
 - [X] field level validation
 - [X] password hiding
 - [X] check for required fields on each scheme
-- [ ] basic JWT auth
+- [x] basic JWT auth
+- [ ] jwt support for all routes
 - [ ] customization of basic auth
