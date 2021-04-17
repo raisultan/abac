@@ -8,6 +8,9 @@ restart_services:
 	docker-compose stop
 	docker-compose up --build -d
 
+build_services:
+	docker-compose build
+
 down_services:
 	docker-compose down
 
