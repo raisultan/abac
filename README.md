@@ -20,5 +20,7 @@
 - [X] setup migrations
 - [X] user model implementation
 - [X] CRUD for user model
+- [X] password keeping mech
+- [ ] password hiding
 - [ ] basic JWT auth
 - [ ] customization of basic auth
