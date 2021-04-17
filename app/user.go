@@ -2,8 +2,6 @@ package main
 
 import (
 	"database/sql"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type user struct {
@@ -26,13 +24,6 @@ func (u *user) getUser(db *sql.DB) error {
 	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
 }
 
-func (u *user) getUserByEmail(db *sql.DB) error {
-	return db.QueryRow(
-		"SELECT email, password, firstName, lastName FROM users WHERE email=$1",
-		u.Email,
-	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
-}
-
 func (u *user) updateUser(db *sql.DB) error {
 	_, err := db.Exec(
 		"UPDATE users SET email=$1, firstName=$2, lastName=$3 WHERE id=$4",
@@ -49,41 +40,6 @@ func (u *user) deleteUser(db *sql.DB) error {
 	_, err := db.Exec("DELETE FROM users WHERE id=$1", u.ID)
 
 	return err
-}
-
-func (u *user) setPassword() error {
-	hashingCost := 8
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), hashingCost)
-
-	if err != nil {
-		return err
-	}
-
-	u.Password = string(hashedPassword)
-
-	return nil
-}
-
-func (u *user) createUser(db *sql.DB) error {
-	err := u.setPassword()
-
-	if err != nil {
-		return err
-	}
-
-	err = db.QueryRow(
-		"INSERT INTO users(email, password, firstName, lastName) VALUES($1, $2, $3, $4) RETURNING id",
-		u.Email,
-		u.Password,
-		u.FirstName,
-		u.LastName,
-	).Scan(&u.ID)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func getUsers(db *sql.DB, start, count int) ([]user, error) {

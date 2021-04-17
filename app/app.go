@@ -91,24 +91,6 @@ func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, users)
 }
 
-func (a *App) createUser(w http.ResponseWriter, r *http.Request) {
-	var u user
-	decoder := json.NewDecoder(r.Body)
-
-	if err := decoder.Decode(&u); err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
-		return
-	}
-	defer r.Body.Close()
-
-	if err := u.createUser(a.DB); err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	respondWithJSON(w, http.StatusCreated, u)
-}
-
 func (a *App) updateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -181,6 +163,35 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
+func (a *App) register(w http.ResponseWriter, r *http.Request) {
+	var u userRegister
+	decoder := json.NewDecoder(r.Body)
+
+	if err := decoder.Decode(&u); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	exists, err := u.checkUserExists(a.DB)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	} else {
+		if exists == true {
+			respondWithError(w, http.StatusBadRequest, "User already exists")
+			return
+		}
+	}
+
+	if err := u.register(a.DB); err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, u)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/users", a.createUser).Methods("POST")
@@ -188,5 +199,6 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.updateUser).Methods("PUT")
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.deleteUser).Methods("DELETE")
 
+	a.Router.HandleFunc("/register", a.register).Methods("POST")
 	a.Router.HandleFunc("/login", a.login).Methods("POST")
 }
