@@ -5,8 +5,8 @@ import (
 )
 
 type user struct {
-	ID         int64  `json:"id"`
-	Email      string `json:"string"`
+	ID         int    `json:"id"`
+	Email      string `json:"email"`
 	FirstName  string `json:"firstName"`
 	LastName   string `json:"lastName"`
 	CreatedAt  string `json:"createdAt"`
@@ -14,35 +14,38 @@ type user struct {
 	IsApproved bool   `json:"isApproved"`
 }
 
-type product struct {
-	ID    int     `json:"id"`
-	Name  string  `json:"name"`
-	Price float64 `json:"price"`
+func (u *user) getUser(db *sql.DB) error {
+	return db.QueryRow(
+		"SELECT email, firstName, lastName FROM users WHERE id=$1",
+		u.ID,
+	).Scan(&u.Email, &u.FirstName, &u.LastName)
 }
 
-func (p *product) getProduct(db *sql.DB) error {
-	return db.QueryRow("SELECT name, price FROM products WHERE id=$1",
-		p.ID).Scan(&p.Name, &p.Price)
-}
-
-func (p *product) updateProduct(db *sql.DB) error {
-	_, err :=
-		db.Exec("UPDATE products SET name=$1, price=$2 WHERE id=$3",
-			p.Name, p.Price, p.ID)
+func (u *user) updateUser(db *sql.DB) error {
+	_, err := db.Exec(
+		"UPDATE users SET email=$1, firstName=$2, lastName=$3 WHERE id=$4",
+		u.Email,
+		u.FirstName,
+		u.LastName,
+		u.ID,
+	)
 
 	return err
 }
 
-func (p *product) deleteProduct(db *sql.DB) error {
-	_, err := db.Exec("DELETE FROM products WHERE id=$1", p.ID)
+func (u *user) deleteUser(db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM users WHERE id=$1", u.ID)
 
 	return err
 }
 
-func (p *product) createProduct(db *sql.DB) error {
+func (u *user) createUser(db *sql.DB) error {
 	err := db.QueryRow(
-		"INSERT INTO products(name, price) VALUES($1, $2) RETURNING id",
-		p.Name, p.Price).Scan(&p.ID)
+		"INSERT INTO users(email, firstName, lastName) VALUES($1, $2, $3) RETURNING id",
+		u.Email,
+		u.FirstName,
+		u.LastName,
+	).Scan(&u.ID)
 
 	if err != nil {
 		return err
@@ -51,10 +54,12 @@ func (p *product) createProduct(db *sql.DB) error {
 	return nil
 }
 
-func getProducts(db *sql.DB, start, count int) ([]product, error) {
+func getUsers(db *sql.DB, start, count int) ([]user, error) {
 	rows, err := db.Query(
-		"SELECT id, name,  price FROM products LIMIT $1 OFFSET $2",
-		count, start)
+		"SELECT id, email, firstName, lastName FROM users LIMIT $1 OFFSET $2",
+		count,
+		start,
+	)
 
 	if err != nil {
 		return nil, err
@@ -62,15 +67,15 @@ func getProducts(db *sql.DB, start, count int) ([]product, error) {
 
 	defer rows.Close()
 
-	products := []product{}
+	users := []user{}
 
 	for rows.Next() {
-		var p product
-		if err := rows.Scan(&p.ID, &p.Name, &p.Price); err != nil {
+		var u user
+		if err := rows.Scan(&u.ID, &u.Email, &u.FirstName, &u.LastName); err != nil {
 			return nil, err
 		}
-		products = append(products, p)
+		users = append(users, u)
 	}
 
-	return products, nil
+	return users, nil
 }
