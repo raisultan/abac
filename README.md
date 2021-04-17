@@ -8,12 +8,12 @@
 
 ## Entities
 
-![entities](diagrams/abac-entities.jpg)
+![entities](docs/diagrams/abac-entities.jpg)
 
 
 ## Routes
 
-![entities](diagrams/abac-routes.jpg)
+![entities](docs/diagrams/abac-routes.jpg)
 
 
 ## Todo:
