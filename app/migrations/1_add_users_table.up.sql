@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS users
     email TEXT NOT NULL,
     firstName TEXT NOT NULL,
     lastName TEXT NOT NULL,
-    createdAt TEXT NOT NULL,
-    isAdmin BOOLEAN NOT NULL DEFAULT FALSE,
-    isApproved BOOLEAN NOT NULL DEFAULT FALSE,
+    createdAt TEXT DEFAULT NULL,
+    isAdmin BOOLEAN DEFAULT FALSE,
+    isApproved BOOLEAN DEFAULT FALSE,
 
     CONSTRAINT users_pkey PRIMARY KEY (id)
 );
