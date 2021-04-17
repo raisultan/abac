@@ -21,8 +21,44 @@ import (
 const defaultPort = ":8080"
 
 type App struct {
-	Router *mux.Router
-	DB     *sql.DB
+	Router     *mux.Router
+	DB         *sql.DB
+	Validator  *validator.Validate
+	Translator ut.Translator
+}
+
+func registerCustomTranslation(v *validator.Validate, trans ut.Translator) {
+	if err := enTranslations.RegisterDefaultTranslations(v, trans); err != nil {
+		log.Fatal(err)
+	}
+
+	_ = v.RegisterTranslation("required", trans, func(ut ut.Translator) error {
+		return ut.Add("required", "{0} is a required field", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("required", fe.Field())
+		return t
+	})
+
+	_ = v.RegisterTranslation("email", trans, func(ut ut.Translator) error {
+		return ut.Add("email", "{0} must be a valid email", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("email", fe.Field())
+		return t
+	})
+
+	_ = v.RegisterTranslation("password", trans, func(ut ut.Translator) error {
+		return ut.Add("passwd", "{0} is not strong enough", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("passwd", fe.Field())
+		return t
+	})
+}
+
+func registerCustomValidation(v *validator.Validate) {
+	passwdMinLength := 6
+	_ = v.RegisterValidation("password", func(fl validator.FieldLevel) bool {
+		return len(fl.Field().String()) > passwdMinLength
+	})
 }
 
 func (a *App) Initialize(dbUrl string) {
@@ -33,6 +69,19 @@ func (a *App) Initialize(dbUrl string) {
 	}
 
 	a.Router = mux.NewRouter()
+
+	translator := en.New()
+	uni := ut.New(translator, translator)
+
+	trans, found := uni.GetTranslator("en")
+	if !found {
+		log.Fatal("translator not found")
+	}
+
+	a.Translator = trans
+	a.Validator = validator.New()
+	registerCustomValidation(a.Validator)
+	registerCustomTranslation(a.Validator, a.Translator)
 
 	a.initializeRoutes()
 }
@@ -178,50 +227,13 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	translator := en.New()
-	uni := ut.New(translator, translator)
-
-	trans, found := uni.GetTranslator("en")
-	if !found {
-		log.Fatal("translator not found")
-	}
-
-	v := validator.New()
-
-	if err := enTranslations.RegisterDefaultTranslations(v, trans); err != nil {
-		log.Fatal(err)
-	}
-
-	passwdMinLength := 6
-	_ = v.RegisterValidation("password", func(fl validator.FieldLevel) bool {
-		return len(fl.Field().String()) > passwdMinLength
-	})
-
-	_ = v.RegisterTranslation("required", trans, func(ut ut.Translator) error {
-		return ut.Add("required", "{0} is a required field", true) // see universal-translator for details
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("required", fe.Field())
-		return t
-	})
-
-	_ = v.RegisterTranslation("email", trans, func(ut ut.Translator) error {
-		return ut.Add("email", "{0} must be a valid email", true) // see universal-translator for details
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("email", fe.Field())
-		return t
-	})
-
-	_ = v.RegisterTranslation("password", trans, func(ut ut.Translator) error {
-		return ut.Add("passwd", "{0} is not strong enough", true) // see universal-translator for details
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("passwd", fe.Field())
-		return t
-	})
-
-	if err := v.Struct(uReq); err != nil {
+	if err := a.Validator.Struct(uReq); err != nil {
 		fieldErrors := []fieldValidationError{}
 		for _, e := range err.(validator.ValidationErrors) {
-			fieldError := fieldValidationError{Field: e.Namespace(), Error: e.Translate(trans)}
+			fieldError := fieldValidationError{
+				Field: e.Namespace(),
+				Error: e.Translate(a.Translator),
+			}
 			fieldErrors = append(fieldErrors, fieldError)
 		}
 		respondWithJSON(w, http.StatusBadRequest, validationError{Details: fieldErrors})
