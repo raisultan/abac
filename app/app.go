@@ -119,7 +119,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := user{ID: id}
+	u := userRetrieveResponse{ID: id}
 	if err := u.getUser(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -236,12 +236,11 @@ func (a *App) updateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, userUpdateResponse{
+	respondWithJSON(w, http.StatusOK, userRetrieveResponse{
 		ID:         u.ID,
 		Email:      u.Email,
 		FirstName:  u.FirstName,
 		LastName:   u.LastName,
-		CreatedAt:  u.CreatedAt,
 		IsAdmin:    u.IsAdmin,
 		IsApproved: u.IsApproved,
 	})
