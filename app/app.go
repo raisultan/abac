@@ -9,9 +9,13 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/locales/en"
+	ut "github.com/go-playground/universal-translator"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/go-playground/validator.v9"
+	enTranslations "gopkg.in/go-playground/validator.v9/translations/en"
 )
 
 const defaultPort = ":8080"
@@ -172,6 +176,56 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+
+	translator := en.New()
+	uni := ut.New(translator, translator)
+
+	trans, found := uni.GetTranslator("en")
+	if !found {
+		log.Fatal("translator not found")
+	}
+
+	v := validator.New()
+
+	if err := enTranslations.RegisterDefaultTranslations(v, trans); err != nil {
+		log.Fatal(err)
+	}
+
+	passwdMinLength := 6
+	_ = v.RegisterValidation("password", func(fl validator.FieldLevel) bool {
+		return len(fl.Field().String()) > passwdMinLength
+	})
+
+	_ = v.RegisterTranslation("required", trans, func(ut ut.Translator) error {
+		return ut.Add("required", "{0} is a required field", true) // see universal-translator for details
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("required", fe.Field())
+		return t
+	})
+
+	_ = v.RegisterTranslation("email", trans, func(ut ut.Translator) error {
+		return ut.Add("email", "{0} must be a valid email", true) // see universal-translator for details
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("email", fe.Field())
+		return t
+	})
+
+	_ = v.RegisterTranslation("password", trans, func(ut ut.Translator) error {
+		return ut.Add("passwd", "{0} is not strong enough", true) // see universal-translator for details
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("passwd", fe.Field())
+		return t
+	})
+
+	if err := v.Struct(u); err != nil {
+		fieldErrors := []fieldValidationError{}
+		for _, e := range err.(validator.ValidationErrors) {
+			fieldError := fieldValidationError{Field: e.Namespace(), Error: e.Translate(trans)}
+			fieldErrors = append(fieldErrors, fieldError)
+		}
+		respondWithJSON(w, http.StatusBadRequest, validationError{Details: fieldErrors})
+		return
+	}
 
 	exists, err := u.checkUserExists(a.DB)
 	if err != nil {
