@@ -20,6 +20,8 @@ import (
 
 const defaultPort = ":8080"
 
+var jwtKey = []byte("7TJggQdS8fUJygGzdLkMQXk5RUTNnZeQDAc3DcM6fjm3MZMzSm8ErMTxMG8k9nR7PtE4WYCReBFSbcEfeKH9DyA8VDQx6fHeWunTWe35USeQN4n7hXjMnGnDECwaWvbU")
+
 type App struct {
 	Router     *mux.Router
 	DB         *sql.DB
@@ -234,7 +236,14 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uLoginResp := userLoginJWTResponse{Access: "", Refresh: ""}
+	uLoginResp := userLoginJWTResponse{}
+	err = uLoginResp.generate(uLoginCreds.Email)
+
+	if err != nil {
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	respondWithJSON(w, http.StatusOK, uLoginResp)
 }
 

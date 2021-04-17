@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -23,6 +25,47 @@ type userLoginRequest struct {
 type userLoginJWTResponse struct {
 	Access  string `json:"access"`
 	Refresh string `json:"refresh"`
+}
+
+func (r *userLoginJWTResponse) generate(uEmail string) error {
+	jwtExpirationMins := 5
+	expirationTime := time.Now().Add(time.Duration(jwtExpirationMins) * time.Minute)
+
+	claims := jwtClaims{
+		Email: uEmail,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString(jwtKey)
+
+	jwtRefreshExpirationMins := 30
+	refreshExpirationTime := time.Now().Add(time.Duration(jwtRefreshExpirationMins) * time.Minute)
+
+	refreshClaims := jwtClaims{
+		Email: uEmail,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: refreshExpirationTime.Unix(),
+		},
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenStr, err := refreshToken.SignedString(jwtKey)
+
+	if err != nil {
+		return err
+	}
+
+	r.Access = tokenStr
+	r.Refresh = refreshTokenStr
+	return nil
+}
+
+type jwtClaims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
 }
 
 type userRegisterRequest struct {
