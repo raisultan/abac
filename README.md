@@ -21,8 +21,8 @@
 - [X] user model implementation
 - [X] CRUD for user model
 - [X] password keeping mech
-- [ ] field level validation
-- [ ] password hiding
+- [X] field level validation
+- [X] password hiding
 - [ ] check for required fields on each scheme
 - [ ] basic JWT auth
 - [ ] customization of basic auth
