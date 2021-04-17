@@ -8,7 +8,7 @@ x-service-basic: &service-basic
     POSTGRES_URL: "postgres://abac_user:abac_password@db/abac_db?sslmode=disable"
 
 services:
-  web:
+  server:
     build:
         context: ./
         dockerfile: ./docker/Dockerfile
