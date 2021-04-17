@@ -60,6 +60,13 @@ func (r *userJWTRefreshResponse) refresh(a string) error {
 	return nil
 }
 
+type tokenPayload struct {
+	Email        string
+	Expiration   uint64
+	IsAuthorized bool
+	Type         string
+}
+
 type userLoginJWTResponse struct {
 	Access  string `json:"access"`
 	Refresh string `json:"refresh"`
