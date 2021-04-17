@@ -22,5 +22,6 @@
 - [X] CRUD for user model
 - [X] password keeping mech
 - [ ] password hiding
+- [ ] check for required fields on each scheme
 - [ ] basic JWT auth
 - [ ] customization of basic auth
