@@ -112,6 +112,21 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
+func (a *App) ValidateRequest(r interface{}) (bool, validationError) {
+	if err := a.Validator.Struct(r); err != nil {
+		fieldErrors := []fieldValidationError{}
+		for _, e := range err.(validator.ValidationErrors) {
+			fieldError := fieldValidationError{
+				Field: e.Namespace(),
+				Error: e.Translate(a.Translator),
+			}
+			fieldErrors = append(fieldErrors, fieldError)
+		}
+		return false, validationError{Details: fieldErrors}
+	}
+	return true, validationError{}
+}
+
 func respondWithErrorMessage(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
@@ -196,6 +211,12 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	isValid, vError := a.ValidateRequest(uLoginCreds)
+	if !isValid {
+		respondWithJSON(w, http.StatusBadRequest, vError)
+		return
+	}
+
 	u := userLoginRequest{Email: uLoginCreds.Email}
 	if err := u.getUserByEmail(a.DB); err != nil {
 		switch err {
@@ -227,16 +248,9 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := a.Validator.Struct(uReq); err != nil {
-		fieldErrors := []fieldValidationError{}
-		for _, e := range err.(validator.ValidationErrors) {
-			fieldError := fieldValidationError{
-				Field: e.Namespace(),
-				Error: e.Translate(a.Translator),
-			}
-			fieldErrors = append(fieldErrors, fieldError)
-		}
-		respondWithJSON(w, http.StatusBadRequest, validationError{Details: fieldErrors})
+	isValid, vError := a.ValidateRequest(uReq)
+	if !isValid {
+		respondWithJSON(w, http.StatusBadRequest, vError)
 		return
 	}
 
