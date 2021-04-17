@@ -11,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const defaultPort = ":8080"
@@ -150,10 +151,41 @@ func (a *App) deleteUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"result": "success"})
 }
 
+func (a *App) login(w http.ResponseWriter, r *http.Request) {
+	var uCreds user
+	decoder := json.NewDecoder(r.Body)
+
+	if err := decoder.Decode(&uCreds); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	u := user{Email: uCreds.Email}
+	if err := u.getUserByEmail(a.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(uCreds.Password))
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, u)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/users", a.createUser).Methods("POST")
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.getUser).Methods("GET")
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.updateUser).Methods("PUT")
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.deleteUser).Methods("DELETE")
+	a.Router.HandleFunc("/login", a.login).Methods("POST")
 }
