@@ -2,10 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"errors"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,35 +28,6 @@ type userJWTRefreshResponse struct {
 	Access string `json:"access"`
 }
 
-func (r *userJWTRefreshResponse) refresh(a string) error {
-	claims := &jwtClaims{}
-	t, err := jwt.ParseWithClaims(a, claims, func(tkn *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	if !t.Valid {
-		return errors.New("Access token is invalid")
-	}
-
-	jwtExpirationMins := 5
-	expirationTime := time.Now().Add(time.Duration(jwtExpirationMins) * time.Minute)
-	claims.ExpiresAt = expirationTime.Unix()
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString(jwtKey)
-
-	if err != nil {
-		return err
-	}
-
-	r.Access = tokenStr
-	return nil
-}
-
 type tokenPayload struct {
 	Email        string
 	Expiration   uint64
@@ -70,47 +38,6 @@ type tokenPayload struct {
 type userLoginJWTResponse struct {
 	Access  string `json:"access"`
 	Refresh string `json:"refresh"`
-}
-
-func (r *userLoginJWTResponse) generate(uEmail string) error {
-	jwtExpirationMins := 5
-	expirationTime := time.Now().Add(time.Duration(jwtExpirationMins) * time.Minute)
-
-	claims := jwtClaims{
-		Email: uEmail,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err := token.SignedString(jwtKey)
-
-	jwtRefreshExpirationMins := 30
-	refreshExpirationTime := time.Now().Add(time.Duration(jwtRefreshExpirationMins) * time.Minute)
-
-	refreshClaims := jwtClaims{
-		Email: uEmail,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: refreshExpirationTime.Unix(),
-		},
-	}
-
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenStr, err := refreshToken.SignedString(jwtKey)
-
-	if err != nil {
-		return err
-	}
-
-	r.Access = tokenStr
-	r.Refresh = refreshTokenStr
-	return nil
-}
-
-type jwtClaims struct {
-	Email string `json:"email"`
-	jwt.StandardClaims
 }
 
 type userRegisterRequest struct {
