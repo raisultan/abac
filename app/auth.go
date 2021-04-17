@@ -20,7 +20,7 @@ type userLogin struct {
 	Password string `json:"password"`
 }
 
-type userRegister struct {
+type userRegisterRequest struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,password"`
@@ -29,7 +29,15 @@ type userRegister struct {
 	LastName  string `json:"lastName" validate:"required"`
 }
 
-func (u *userRegister) register(db *sql.DB) error {
+type userRegisterResponse struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+}
+
+func (u *userRegisterRequest) register(db *sql.DB) error {
 	err := u.setPassword()
 
 	if err != nil {
@@ -58,7 +66,7 @@ func (u *userLogin) getUserByEmail(db *sql.DB) error {
 	).Scan(&u.Email, &u.Password)
 }
 
-func (u *userRegister) checkUserExists(db *sql.DB) (bool, error) {
+func (u *userRegisterRequest) checkUserExists(db *sql.DB) (bool, error) {
 	err := db.QueryRow(
 		"SELECT email FROM users WHERE email=$1",
 		u.Email,
@@ -74,7 +82,7 @@ func (u *userRegister) checkUserExists(db *sql.DB) (bool, error) {
 	return true, nil
 }
 
-func (u *userRegister) setPassword() error {
+func (u *userRegisterRequest) setPassword() error {
 	hashingCost := 8
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), hashingCost)
 

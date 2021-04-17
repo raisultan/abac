@@ -168,10 +168,10 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) register(w http.ResponseWriter, r *http.Request) {
-	var u userRegister
+	var uReq userRegisterRequest
 	decoder := json.NewDecoder(r.Body)
 
-	if err := decoder.Decode(&u); err != nil {
+	if err := decoder.Decode(&uReq); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -217,7 +217,7 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		return t
 	})
 
-	if err := v.Struct(u); err != nil {
+	if err := v.Struct(uReq); err != nil {
 		fieldErrors := []fieldValidationError{}
 		for _, e := range err.(validator.ValidationErrors) {
 			fieldError := fieldValidationError{Field: e.Namespace(), Error: e.Translate(trans)}
@@ -227,7 +227,7 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exists, err := u.checkUserExists(a.DB)
+	exists, err := uReq.checkUserExists(a.DB)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -238,12 +238,18 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := u.register(a.DB); err != nil {
+	if err := uReq.register(a.DB); err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, u)
+	uResp := userRegisterResponse{
+		ID:        uReq.ID,
+		Email:     uReq.Email,
+		FirstName: uReq.FirstName,
+		LastName:  uReq.LastName,
+	}
+	respondWithJSON(w, http.StatusCreated, uResp)
 }
 
 func (a *App) initializeRoutes() {
