@@ -2,11 +2,16 @@ package main
 
 import (
 	"database/sql"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type user struct {
-	ID         int    `json:"id"`
-	Email      string `json:"email"`
+	ID int `json:"id"`
+
+	Email    string `json:"email"`
+	Password string `json:"password"`
+
 	FirstName  string `json:"firstName"`
 	LastName   string `json:"lastName"`
 	CreatedAt  string `json:"createdAt"`
@@ -16,9 +21,9 @@ type user struct {
 
 func (u *user) getUser(db *sql.DB) error {
 	return db.QueryRow(
-		"SELECT email, firstName, lastName FROM users WHERE id=$1",
+		"SELECT email, password, firstName, lastName FROM users WHERE id=$1",
 		u.ID,
-	).Scan(&u.Email, &u.FirstName, &u.LastName)
+	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
 }
 
 func (u *user) updateUser(db *sql.DB) error {
@@ -39,10 +44,30 @@ func (u *user) deleteUser(db *sql.DB) error {
 	return err
 }
 
+func (u *user) setPassword() error {
+	hashingCost := 8
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), hashingCost)
+
+	if err != nil {
+		return err
+	}
+
+	u.Password = string(hashedPassword)
+
+	return nil
+}
+
 func (u *user) createUser(db *sql.DB) error {
-	err := db.QueryRow(
-		"INSERT INTO users(email, firstName, lastName) VALUES($1, $2, $3) RETURNING id",
+	err := u.setPassword()
+
+	if err != nil {
+		return err
+	}
+
+	err = db.QueryRow(
+		"INSERT INTO users(email, password, firstName, lastName) VALUES($1, $2, $3, $4) RETURNING id",
 		u.Email,
+		u.Password,
 		u.FirstName,
 		u.LastName,
 	).Scan(&u.ID)
@@ -56,7 +81,7 @@ func (u *user) createUser(db *sql.DB) error {
 
 func getUsers(db *sql.DB, start, count int) ([]user, error) {
 	rows, err := db.Query(
-		"SELECT id, email, firstName, lastName FROM users LIMIT $1 OFFSET $2",
+		"SELECT id, email, password, firstName, lastName FROM users LIMIT $1 OFFSET $2",
 		count,
 		start,
 	)
@@ -71,7 +96,7 @@ func getUsers(db *sql.DB, start, count int) ([]user, error) {
 
 	for rows.Next() {
 		var u user
-		if err := rows.Scan(&u.ID, &u.Email, &u.FirstName, &u.LastName); err != nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.Password, &u.FirstName, &u.LastName); err != nil {
 			return nil, err
 		}
 		users = append(users, u)

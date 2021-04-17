@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users
 (
     id SERIAL,
     email TEXT NOT NULL,
+    password TEXT NOT NULL,
     firstName TEXT NOT NULL,
     lastName TEXT NOT NULL,
     createdAt TEXT DEFAULT NULL,
