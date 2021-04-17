@@ -15,9 +15,14 @@ type validationError struct {
 	Details []fieldValidationError `json:"details"`
 }
 
-type userLogin struct {
+type userLoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type userLoginJWTResponse struct {
+	Access  string `json:"access"`
+	Refresh string `json:"refresh"`
 }
 
 type userRegisterRequest struct {
@@ -59,7 +64,7 @@ func (u *userRegisterRequest) register(db *sql.DB) error {
 	return nil
 }
 
-func (u *userLogin) getUserByEmail(db *sql.DB) error {
+func (u *userLoginRequest) getUserByEmail(db *sql.DB) error {
 	return db.QueryRow(
 		"SELECT email, password FROM users WHERE email=$1",
 		u.Email,

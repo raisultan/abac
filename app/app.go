@@ -138,16 +138,16 @@ func (a *App) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
-	var uCreds userLogin
+	var uLoginCreds userLoginRequest
 	decoder := json.NewDecoder(r.Body)
 
-	if err := decoder.Decode(&uCreds); err != nil {
+	if err := decoder.Decode(&uLoginCreds); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
 
-	u := userLogin{Email: uCreds.Email}
+	u := userLoginRequest{Email: uLoginCreds.Email}
 	if err := u.getUserByEmail(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -158,13 +158,14 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(uCreds.Password))
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(uLoginCreds.Password))
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, u)
+	uLoginResp := userLoginJWTResponse{Access: "", Refresh: ""}
+	respondWithJSON(w, http.StatusOK, uLoginResp)
 }
 
 func (a *App) register(w http.ResponseWriter, r *http.Request) {
