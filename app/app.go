@@ -2,6 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"log"
 
@@ -9,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/gorilla/mux"
@@ -20,7 +25,7 @@ import (
 
 const defaultPort = ":8080"
 
-var jwtKey = []byte("7TJggQdS8fUJygGzdLkMQXk5RUTNnZeQDAc3DcM6fjm3MZMzSm8ErMTxMG8k9nR7PtE4WYCReBFSbcEfeKH9DyA8VDQx6fHeWunTWe35USeQN4n7hXjMnGnDECwaWvbU")
+var jwtKey = []byte("23a93f6d2673b09c1d3d063cf7a97fc20d0054dfce65c3737455dbec25439938")
 
 type App struct {
 	Router     *mux.Router
@@ -236,15 +241,19 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uLoginResp := userLoginJWTResponse{}
-	err = uLoginResp.generate(uLoginCreds.Email)
-
+	at, err := createAccessToken(uLoginCreds.Email)
 	if err != nil {
 		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusOK, uLoginResp)
+	rt, err := createRefreshToken(uLoginCreds.Email)
+	if err != nil {
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, userLoginJWTResponse{Access: at, Refresh: rt})
 }
 
 func (a *App) register(w http.ResponseWriter, r *http.Request) {
@@ -322,4 +331,133 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/register", a.register).Methods("POST")
 	a.Router.HandleFunc("/login", a.login).Methods("POST")
 	a.Router.HandleFunc("/refresh", a.refresh).Methods("POST")
+}
+
+func createAccessToken(email string) (string, error) {
+	atClaims := jwt.MapClaims{}
+	atClaims["isAuthorized"] = true
+	atClaims["email"] = email
+	atClaims["type"] = "access"
+	atClaims["exp"] = time.Now().Add(5 * time.Minute).Unix()
+
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func createRefreshToken(email string) (string, error) {
+	atClaims := jwt.MapClaims{}
+	atClaims["isAuthorized"] = true
+	atClaims["email"] = email
+	atClaims["type"] = "refresh"
+	atClaims["exp"] = time.Now().Add(30 * time.Minute).Unix()
+
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func refreshAccessToken(email string) (string, error) {
+	atClaims := jwt.MapClaims{}
+	atClaims["isAuthorized"] = true
+	atClaims["email"] = email
+	atClaims["type"] = "refresh"
+	atClaims["exp"] = time.Now().Add(30 * time.Minute).Unix()
+
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	token, err := at.SignedString(jwtKey)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
+
+func ExtractToken(r *http.Request) string {
+	bearer := r.Header.Get("Authorization")
+	strArr := strings.Split(bearer, " ")
+	if len(strArr) == 2 {
+		return strArr[1]
+	}
+	return ""
+}
+
+func VerifyToken(r *http.Request) (*jwt.Token, error) {
+	tokenStr := ExtractToken(r)
+	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New(
+				fmt.Sprintf(
+					"unexpected signing method: %v",
+					token.Header["alg"],
+				),
+			)
+		}
+		return jwtKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func TokenValid(r *http.Request) error {
+	token, err := VerifyToken(r)
+	if err != nil {
+		return err
+	}
+	if _, ok := token.Claims.(jwt.Claims); !ok && !token.Valid {
+		return err
+	}
+	return nil
+}
+
+func ExtractTokenPayload(r *http.Request) (*tokenPayload, error) {
+	token, err := VerifyToken(r)
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok && token.Valid {
+		email, ok := claims["email"].(string)
+		if !ok {
+			return nil, err
+		}
+
+		exp, err := strconv.ParseUint(fmt.Sprintf("%.f", claims["exp"]), 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		isAuth, ok := claims["isAuthorized"].(bool)
+		if !ok {
+			return nil, err
+		}
+
+		tType, ok := claims["type"].(string)
+		if !ok {
+			return nil, err
+		}
+
+		tp := tokenPayload{
+			Email:        email,
+			Expiration:   exp,
+			IsAuthorized: isAuth,
+			Type:         tType,
+		}
+		return &tp, nil
+	}
+
+	return nil, err
 }
