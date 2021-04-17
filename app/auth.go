@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -20,6 +21,43 @@ type validationError struct {
 type userLoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type userJWTRefreshRequest struct {
+	Refresh string `json:"refresh" validate:"required"`
+}
+
+type userJWTRefreshResponse struct {
+	Access string `json:"access"`
+}
+
+func (r *userJWTRefreshResponse) refresh(a string) error {
+	claims := &jwtClaims{}
+	t, err := jwt.ParseWithClaims(a, claims, func(tkn *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if !t.Valid {
+		return errors.New("Access token is invalid")
+	}
+
+	jwtExpirationMins := 5
+	expirationTime := time.Now().Add(time.Duration(jwtExpirationMins) * time.Minute)
+	claims.ExpiresAt = expirationTime.Unix()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err := token.SignedString(jwtKey)
+
+	if err != nil {
+		return err
+	}
+
+	r.Access = tokenStr
+	return nil
 }
 
 type userLoginJWTResponse struct {

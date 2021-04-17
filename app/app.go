@@ -288,6 +288,31 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, uResp)
 }
 
+func (a *App) refresh(w http.ResponseWriter, r *http.Request) {
+	var jwtRefReq userJWTRefreshRequest
+	decoder := json.NewDecoder(r.Body)
+
+	if err := decoder.Decode(&jwtRefReq); err != nil {
+		respondWithErrorMessage(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	isValid, vError := a.ValidateRequest(jwtRefReq)
+	if !isValid {
+		respondWithJSON(w, http.StatusBadRequest, vError)
+		return
+	}
+
+	jwtRefResp := userJWTRefreshResponse{}
+	if err := jwtRefResp.refresh(jwtRefReq.Refresh); err != nil {
+		respondWithErrorMessage(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, jwtRefResp)
+}
+
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/users/{id:[0-9]+}", a.getUser).Methods("GET")
@@ -296,4 +321,5 @@ func (a *App) initializeRoutes() {
 
 	a.Router.HandleFunc("/register", a.register).Methods("POST")
 	a.Router.HandleFunc("/login", a.login).Methods("POST")
+	a.Router.HandleFunc("/refresh", a.refresh).Methods("POST")
 }
