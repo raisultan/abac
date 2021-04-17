@@ -7,11 +7,33 @@ import (
 type user struct {
 	ID int `json:"id"`
 
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 
-	FirstName  string `json:"firstName"`
-	LastName   string `json:"lastName"`
+	FirstName  string `json:"firstName" validate:"required"`
+	LastName   string `json:"lastName" validate:"required"`
+	CreatedAt  string `json:"createdAt"`
+	IsAdmin    bool   `json:"isAdmin"`
+	IsApproved bool   `json:"isApproved"`
+}
+
+type userUpdateRequest struct {
+	ID int `json:"-"`
+
+	Email      string `json:"-"`
+	FirstName  string `json:"firstName" validate:"required"`
+	LastName   string `json:"lastName" validate:"required"`
+	CreatedAt  string `json:"-"`
+	IsAdmin    bool   `json:"-"`
+	IsApproved bool   `json:"-"`
+}
+
+type userUpdateResponse struct {
+	ID int `json:"id"`
+
+	Email      string `json:"email" validate:"required,email"`
+	FirstName  string `json:"firstName" validate:"required"`
+	LastName   string `json:"lastName" validate:"required"`
 	CreatedAt  string `json:"createdAt"`
 	IsAdmin    bool   `json:"isAdmin"`
 	IsApproved bool   `json:"isApproved"`
@@ -24,10 +46,9 @@ func (u *user) getUser(db *sql.DB) error {
 	).Scan(&u.Email, &u.Password, &u.FirstName, &u.LastName)
 }
 
-func (u *user) updateUser(db *sql.DB) error {
+func (u *userUpdateRequest) updateUser(db *sql.DB) error {
 	_, err := db.Exec(
-		"UPDATE users SET email=$1, firstName=$2, lastName=$3 WHERE id=$4",
-		u.Email,
+		"UPDATE users SET firstName=$1, lastName=$2 WHERE id=$3",
 		u.FirstName,
 		u.LastName,
 		u.ID,
