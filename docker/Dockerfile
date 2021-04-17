@@ -5,7 +5,8 @@ WORKDIR /app
 COPY ./app/go.mod /app
 COPY ./app/go.sum /app
 
-RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest \
+RUN apk add --update make \
+    && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest \
     && go mod download
 
 COPY ./app /app
