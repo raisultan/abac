@@ -1,4 +1,4 @@
-package retrieve
+package delete
 
 type Service interface {
 	DeleteUser(int) error
