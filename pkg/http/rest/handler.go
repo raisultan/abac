@@ -43,6 +43,8 @@ func Handler(
 	r.HandleFunc("/login", loginUser(login)).Methods("POST")
 	r.HandleFunc("/refresh", refreshUserJWT(ref)).Methods("POST")
 
+	r.Use(loggingMiddleware)
+
 	return r
 }
 
