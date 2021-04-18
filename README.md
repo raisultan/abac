@@ -41,6 +41,6 @@
 - [X] refactoring teardown
 - [X] server graceful shutdown
 - [X] basic logging
-- [ ] add auth middleware
-- [ ] add request body validators
+- [x] add auth middleware
+- [x] add request body validators
 - [ ] customization of basic auth
