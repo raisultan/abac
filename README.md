@@ -16,6 +16,17 @@
 ![entities](docs/diagrams/abac-routes.jpg)
 
 
+## Project Structure
+
+### `/pkg` - The Framework
+    - `/pkg/utils/`, `/pkg/config/`, ...
+    - No dependencies on `/cmd`
+    - Can be imported by external programs
+### `/cmd` - The Programs
+    - `/cmd/abac/`, `/cmd/service/`, ...
+    - Domain specific logic stays close to the main() func
+
+
 ## Todo:
 - [X] setup migrations
 - [X] user model implementation
