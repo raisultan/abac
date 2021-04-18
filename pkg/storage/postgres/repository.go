@@ -153,3 +153,8 @@ func (s *Storage) UpdateUser(r update.UserUpdateRequest) (update.UserRetrieveRes
 
 	return u, nil
 }
+
+func (s *Storage) DeleteUser(uID int) error {
+	_, err := s.db.Exec("DELETE FROM users WHERE id=$1", uID)
+	return err
+}
