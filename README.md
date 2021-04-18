@@ -38,5 +38,5 @@
 - [x] basic JWT auth
 - [X] jwt support for all routes
 - [X] refactor and restructure the whole project
-- [ ] refactoring teardown
+- [X] refactoring teardown
 - [ ] customization of basic auth
