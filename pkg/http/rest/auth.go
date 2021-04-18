@@ -22,10 +22,6 @@ type tokenPayload struct {
 	Type         string
 }
 
-func validateRequest(r interface{}) error {
-	return nil
-}
-
 func validateAuth(r *http.Request) error {
 	tp, err := extractTokenPayload(r)
 	if err != nil {
