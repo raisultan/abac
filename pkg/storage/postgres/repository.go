@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"os"
 
+	_ "github.com/lib/pq"
+
 	"github.com/raisultan/abac/pkg/list"
 	"github.com/raisultan/abac/pkg/login"
 	"github.com/raisultan/abac/pkg/register"
@@ -20,14 +22,14 @@ type Storage struct {
 
 func NewStorage() (*Storage, error) {
 	var err error
-	s := new(Storage)
+	s := Storage{}
 
 	s.db, err = sql.Open("postgres", dbUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return &s, nil
 }
 
 func (s *Storage) GetAllUsers(limit, offset int) ([]list.UserRetrieveResponse, error) {
@@ -117,16 +119,17 @@ func (s *Storage) GetUserByID(uID int) (retrieve.UserRetrieveResponse, error) {
 }
 
 func (s *Storage) GetUserByEmail(r login.UserLoginRequest) (login.UserLoginRequest, error) {
+	u := login.UserLoginRequest{}
 	err := s.db.QueryRow(
 		"SELECT email, password FROM users WHERE email=$1",
 		r.Email,
-	).Scan(&r.Email, &r.Password)
+	).Scan(&u.Email, &u.Password)
 
 	if err != nil {
 		return login.UserLoginRequest{}, err
 	}
 
-	return r, nil
+	return u, nil
 }
 
 func (s *Storage) UpdateUser(r update.UserUpdateRequest) (update.UserRetrieveResponse, error) {
