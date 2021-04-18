@@ -3,6 +3,7 @@ package rest
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -32,16 +33,23 @@ func Handler(
 	upd update.Service,
 	del delete.Service,
 ) *mux.Router {
-	r := mux.NewRouter()
+	rv, err := newReqValidator()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
+	registerCustomValidations(rv.Validator)
+	registerCustomTranslations(rv.Validator, rv.Translator)
+
+	r := mux.NewRouter()
 	r.HandleFunc("/users", listUsers(lst)).Methods("GET")
 	r.HandleFunc("/users/{id:[0-9]+}", retrieveUser(retr)).Methods("GET")
-	r.HandleFunc("/users/{id:[0-9]+}", updateUser(upd)).Methods("PUT")
+	r.HandleFunc("/users/{id:[0-9]+}", updateUser(upd, &rv)).Methods("PUT")
 	r.HandleFunc("/users/{id:[0-9]+}", deleteUser(del)).Methods("DELETE")
 
-	r.HandleFunc("/register", registerUser(reg)).Methods("POST")
-	r.HandleFunc("/login", loginUser(login)).Methods("POST")
-	r.HandleFunc("/refresh", refreshUserJWT(ref)).Methods("POST")
+	r.HandleFunc("/register", registerUser(reg, &rv)).Methods("POST")
+	r.HandleFunc("/login", loginUser(login, &rv)).Methods("POST")
+	r.HandleFunc("/refresh", refreshUserJWT(ref, &rv)).Methods("POST")
 
 	r.Use(loggingMiddleware)
 
@@ -103,7 +111,7 @@ func retrieveUser(s retrieve.Service) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func updateUser(s update.Service) func(w http.ResponseWriter, r *http.Request) {
+func updateUser(s update.Service, rv *reqValidator) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := validateAuth(r); err != nil {
 			respondWithErrorMessage(w, http.StatusUnauthorized, err.Error())
@@ -125,9 +133,9 @@ func updateUser(s update.Service) func(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		vErr := validateRequest(ur)
-		if vErr != nil {
-			respondWithJSON(w, http.StatusBadRequest, vErr.Error())
+		isValid, vErr := validateRequest(ur, rv)
+		if !isValid {
+			respondWithJSON(w, http.StatusBadRequest, vErr)
 			return
 		}
 
@@ -167,7 +175,7 @@ func deleteUser(s delete.Service) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func registerUser(s register.Service) func(w http.ResponseWriter, r *http.Request) {
+func registerUser(s register.Service, rv *reqValidator) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ur register.UserRegisterRequest
 		decoder := json.NewDecoder(r.Body)
@@ -178,9 +186,9 @@ func registerUser(s register.Service) func(w http.ResponseWriter, r *http.Reques
 		}
 		defer r.Body.Close()
 
-		vErr := validateRequest(ur)
-		if vErr != nil {
-			respondWithJSON(w, http.StatusBadRequest, vErr.Error())
+		isValid, vErr := validateRequest(ur, rv)
+		if !isValid {
+			respondWithJSON(w, http.StatusBadRequest, vErr)
 			return
 		}
 
@@ -194,7 +202,7 @@ func registerUser(s register.Service) func(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func loginUser(s login.Service) func(w http.ResponseWriter, r *http.Request) {
+func loginUser(s login.Service, rv *reqValidator) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ur login.UserLoginRequest
 		decoder := json.NewDecoder(r.Body)
@@ -205,9 +213,9 @@ func loginUser(s login.Service) func(w http.ResponseWriter, r *http.Request) {
 		}
 		defer r.Body.Close()
 
-		vErr := validateRequest(ur)
-		if vErr != nil {
-			respondWithJSON(w, http.StatusBadRequest, vErr.Error())
+		isValid, vErr := validateRequest(ur, rv)
+		if !isValid {
+			respondWithJSON(w, http.StatusBadRequest, vErr)
 			return
 		}
 
@@ -226,7 +234,7 @@ func loginUser(s login.Service) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func refreshUserJWT(s jwt_refresh.Service) func(w http.ResponseWriter, r *http.Request) {
+func refreshUserJWT(s jwt_refresh.Service, rv *reqValidator) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ur jwt_refresh.UserJWTRefreshRequest
 		decoder := json.NewDecoder(r.Body)
@@ -237,9 +245,9 @@ func refreshUserJWT(s jwt_refresh.Service) func(w http.ResponseWriter, r *http.R
 		}
 		defer r.Body.Close()
 
-		vErr := validateRequest(ur)
-		if vErr != nil {
-			respondWithJSON(w, http.StatusBadRequest, vErr.Error())
+		isValid, vErr := validateRequest(ur, rv)
+		if !isValid {
+			respondWithJSON(w, http.StatusBadRequest, vErr)
 			return
 		}
 
