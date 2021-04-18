@@ -39,6 +39,8 @@
 - [X] jwt support for all routes
 - [X] refactor and restructure the whole project
 - [X] refactoring teardown
+- [X] server graceful shutdown
+- [X] basic logging
 - [ ] add auth middleware
 - [ ] add request body validators
 - [ ] customization of basic auth
