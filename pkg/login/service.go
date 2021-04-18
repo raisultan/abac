@@ -29,6 +29,10 @@ func (s *service) LoginUser(ulr UserLoginRequest) (UserLoginJWTResponse, error) 
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(ulr.Password))
+	if err != nil {
+		return UserLoginJWTResponse{}, err
+	}
+
 	at, err := createAccessToken(ulr.Email)
 	if err != nil {
 		return UserLoginJWTResponse{}, err
