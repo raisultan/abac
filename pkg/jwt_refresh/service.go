@@ -12,7 +12,7 @@ var RefreshExpectedErr = errors.New("Refresh token is expected")
 var InvalidRefreshErr = errors.New("Invalid refresh token received")
 
 type Service interface {
-	RefreshJWT(userJWTRefreshRequest) (userJWTRefreshResponse, error)
+	RefreshJWT(UserJWTRefreshRequest) (UserJWTRefreshResponse, error)
 }
 
 type Repository interface{}
@@ -25,7 +25,7 @@ func NewService(r Repository) Service {
 	return &service{r}
 }
 
-func (s *service) RefreshJWT(r userJWTRefreshRequest) (userJWTRefreshResponse, error) {
+func (s *service) RefreshJWT(r UserJWTRefreshRequest) (UserJWTRefreshResponse, error) {
 	// TODO: make global
 	var jwtKey = []byte("23a93f6d2673b09c1d3d063cf7a97fc20d0054dfce65c3737455dbec25439938")
 
@@ -42,22 +42,22 @@ func (s *service) RefreshJWT(r userJWTRefreshRequest) (userJWTRefreshResponse, e
 	})
 
 	if err != nil {
-		return userJWTRefreshResponse{}, err
+		return UserJWTRefreshResponse{}, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if ok && token.Valid {
 		email, ok := claims["email"].(string)
 		if !ok {
-			return userJWTRefreshResponse{}, err
+			return UserJWTRefreshResponse{}, err
 		}
 
 		tType, ok := claims["type"].(string)
 		if !ok {
-			return userJWTRefreshResponse{}, err
+			return UserJWTRefreshResponse{}, err
 		}
 		if tType != "refresh" {
-			return userJWTRefreshResponse{}, RefreshExpectedErr
+			return UserJWTRefreshResponse{}, RefreshExpectedErr
 		}
 
 		atClaims := jwt.MapClaims{}
@@ -69,11 +69,11 @@ func (s *service) RefreshJWT(r userJWTRefreshRequest) (userJWTRefreshResponse, e
 		at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 		atStr, err := at.SignedString(jwtKey)
 		if err != nil {
-			return userJWTRefreshResponse{}, err
+			return UserJWTRefreshResponse{}, err
 		}
 
-		return userJWTRefreshResponse{Access: atStr}, nil
+		return UserJWTRefreshResponse{Access: atStr}, nil
 	}
 
-	return userJWTRefreshResponse{}, InvalidRefreshErr
+	return UserJWTRefreshResponse{}, InvalidRefreshErr
 }

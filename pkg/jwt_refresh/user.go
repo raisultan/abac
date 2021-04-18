@@ -1,9 +1,9 @@
 package jwt_refresh
 
-type userJWTRefreshRequest struct {
+type UserJWTRefreshRequest struct {
 	Refresh string `json:"refresh" validate:"required"`
 }
 
-type userJWTRefreshResponse struct {
+type UserJWTRefreshResponse struct {
 	Access string `json:"access"`
 }
