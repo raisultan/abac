@@ -15,9 +15,7 @@ type Service interface {
 	RefreshJWT(userJWTRefreshRequest) (userJWTRefreshResponse, error)
 }
 
-type Repository interface {
-	RefreshJWT(userJWTRefreshRequest) (userJWTRefreshResponse, error)
-}
+type Repository interface{}
 
 type service struct {
 	r Repository

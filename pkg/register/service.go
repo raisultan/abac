@@ -9,7 +9,7 @@ type Service interface {
 }
 
 type Repository interface {
-	RegisterUser(UserRegisterRequest) (UserRegisterResponse, error)
+	CreateUser(UserRegisterRequest) (UserRegisterResponse, error)
 	CheckUserExists(UserRegisterRequest) (bool, error)
 }
 
@@ -30,7 +30,7 @@ func (s *service) RegisterUser(ur UserRegisterRequest) (UserRegisterResponse, er
 		return UserRegisterResponse{}, ErrDuplicate
 	}
 
-	u, err := s.r.RegisterUser(ur)
+	u, err := s.r.CreateUser(ur)
 	if err != nil {
 		return UserRegisterResponse{}, err
 	}

@@ -1,11 +1,11 @@
 package login
 
-type userLoginRequest struct {
+type UserLoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
 }
 
-type userLoginJWTResponse struct {
+type UserLoginJWTResponse struct {
 	Access  string `json:"access"`
 	Refresh string `json:"refresh"`
 }

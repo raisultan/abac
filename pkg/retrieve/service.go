@@ -5,7 +5,7 @@ type Service interface {
 }
 
 type Repository interface {
-	GetUserById(int) (UserRetrieveResponse, error)
+	GetUserByID(int) (UserRetrieveResponse, error)
 }
 
 type service struct {
@@ -17,5 +17,5 @@ func NewService(r Repository) Service {
 }
 
 func (s *service) RetrieveUser(id int) (UserRetrieveResponse, error) {
-	return s.r.GetUserById(id)
+	return s.r.GetUserByID(id)
 }
