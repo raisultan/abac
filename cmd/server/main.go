@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/raisultan/abac/pkg/delete"
 	"github.com/raisultan/abac/pkg/http/rest"
@@ -19,6 +24,15 @@ import (
 const defaultPort = ":8080"
 
 func main() {
+	var wait time.Duration
+	flag.DurationVar(
+		&wait,
+		"gracefulShutDown",
+		time.Second*15,
+		"duration during which server will try to gracefully shutdown",
+	)
+	flag.Parse()
+
 	var registerer register.Service
 	var loginer login.Service
 	var jwtRefresher jwt_refresh.Service
@@ -47,6 +61,29 @@ func main() {
 		deleter,
 	)
 
-	fmt.Println("Running on: http://localhost:8080")
-	log.Fatal(http.ListenAndServe(defaultPort, router))
+	srv := &http.Server{
+		Addr:         fmt.Sprintf("0.0.0.0%v", defaultPort),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router,
+	}
+
+	go func() {
+		log.Println("Running on: ", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	<-c
+
+	ctx, cancel := context.WithTimeout(context.Background(), wait)
+	defer cancel()
+	srv.Shutdown(ctx)
+	log.Println("shutting down")
+	os.Exit(0)
 }
