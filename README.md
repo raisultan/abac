@@ -37,5 +37,6 @@
 - [X] check for required fields on each scheme
 - [x] basic JWT auth
 - [X] jwt support for all routes
-- [ ] refactor and restructure the whole project
+- [X] refactor and restructure the whole project
+- [ ] refactoring teardown
 - [ ] customization of basic auth
