@@ -43,4 +43,9 @@
 - [X] basic logging
 - [x] add auth middleware
 - [x] add request body validators
-- [ ] customization of basic auth
+- [ ] add Group and Action entities
+- [ ] add migration schemas for Group and Action
+- [ ] CRUD for Group entity
+- [ ] CRUD for Action entity
+- [ ] add extension for jwt token payload schema to handle needed BL
+- [ ] extend existing AC to pass new payload schema
