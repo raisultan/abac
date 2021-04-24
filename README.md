@@ -43,6 +43,7 @@
 - [X] basic logging
 - [x] add auth middleware
 - [x] add request body validators
+- [ ] add decode interface to all request schemas, so decode and validation will be transferred there
 - [ ] add Group and Action entities
 - [ ] add migration schemas for Group and Action
 - [ ] CRUD for Group entity
